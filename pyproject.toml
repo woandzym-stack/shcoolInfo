@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "llm_gateway"
+name = "school_info"
 version = "0.1.0"
-description = "A Gateway for LLM"
+description = "A shcool info system"
 authors = ["lingotask"]
 readme = "README.md"
 package-mode = false

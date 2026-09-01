@@ -19,8 +19,6 @@ class LogMiddleware:
         # 改为前缀匹配，忽略所有 AI 相关接口的 Body 日志，避免大量文本/文件数据污染日志
         # 路由前缀与 router.py 保持一致，核心网关 + 本地调试接口
         self.IGNORE_BODY_PREFIXES = (
-            "/api/v1/llm_gateway/",    # 核心网关 (router.py: ai_gateway.router)
-            "/api/v1/prompt_generate" # 沙盒接口 (router.py: prompt_generate.router)
         )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):

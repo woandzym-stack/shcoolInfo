@@ -50,10 +50,10 @@ RUN_MODE=local  # 启用调试端点
 
 ```bash
 # 开发模式（自动重载）
-poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8008
+poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8081
 
 # 生产模式
-poetry run uvicorn app.main:app --host 0.0.0.0 --port 8008 --workers 4
+poetry run uvicorn app.main:app --host 0.0.0.0 --port 8081 --workers 4
 ```
 
 ## 项目结构
