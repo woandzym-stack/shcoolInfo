@@ -14,6 +14,8 @@ class Schools(SQLModel, table=True):
     name: str = Field(sa_column=Column("name", String(255), nullable=False))
     # 学校网址
     url: Optional[str] = Field(default=None, sa_column=Column("url", String(500)))
+    # schooland.hk 详情页链接
+    detail_url: Optional[str] = Field(default=None, sa_column=Column("detail_url", String(500)))
     # 学校类型
     type: Optional[str] = Field(default=None, sa_column=Column("type", String(50)))
     # 地区
@@ -26,6 +28,10 @@ class Schools(SQLModel, table=True):
     gender: Optional[str] = Field(default=None, sa_column=Column("gender", String(20)))
     # 宗教
     religion: Optional[str] = Field(default=None, sa_column=Column("religion", String(100)))
+    # 学段：primary=小学, secondary=中学
+    stage: str = Field(default="secondary", sa_column=Column("stage", String(10), nullable=False))
+    # 小学校网编号（仅小学有值）
+    school_net: Optional[str] = Field(default=None, sa_column=Column("school_net", String(20)))
     # 地址
     address: Optional[str] = Field(default=None, sa_column=Column("address", String(500)))
     # 电话

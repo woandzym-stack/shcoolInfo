@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import httpx
 import jinja2
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
@@ -58,6 +59,8 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     lifespan=lifespan
 )
+# 大响应体压缩（如学校名录 700KB+ → ~100KB）；SSE 小 chunk 低于阈值不受影响
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(LogMiddleware)
 
 

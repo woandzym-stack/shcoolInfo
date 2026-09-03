@@ -19,3 +19,15 @@ async def serve_prompt_studio():
         raise HTTPException(status_code=404, detail="Frontend UI not found. Please check app/static/index.html")
 
     return FileResponse(html_path)
+
+
+@ui_router.get("/schools", summary="香港插班学校名录", include_in_schema=False)
+async def serve_schools_directory():
+    """香港插班 · 学校名录展示页面"""
+    base_dir = Path(__file__).resolve().parent.parent.parent.parent
+    html_path = base_dir / "static" / "schools.html"
+
+    if not html_path.exists():
+        raise HTTPException(status_code=404, detail="Frontend UI not found. Please check app/static/schools.html")
+
+    return FileResponse(html_path)

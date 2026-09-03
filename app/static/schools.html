@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>香港插班 · 学校名录</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2/dist/index.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1E2A44;
+    --paper: #F4F6F9;
+    --seal: #B3392E;
+    --seal-dark: #96291F;
+    --slate: #5A6B85;
+    --hairline: #D9DFE8;
+    --band1: #B98A2F;
+    --band2: #4A6FA5;
+    --band3: #8A94A6;
+    --card: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  [v-cloak] { display: none; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Element Plus 主色改为墨蓝，印泥红只留给插班动作 */
+  #app {
+    --el-color-primary: #1E2A44;
+    --el-color-primary-light-3: #4A5878;
+    --el-color-primary-light-5: #7A86A3;
+    --el-color-primary-light-7: #AAB2C6;
+    --el-color-primary-light-8: #C3C9D8;
+    --el-color-primary-light-9: #E8EAF0;
+    --el-color-primary-dark-2: #16203A;
+    --el-border-radius-base: 4px;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- 刊头 ---------- */
+  .masthead {
+    background: var(--card);
+    border-bottom: 1px solid var(--hairline);
+    padding: 34px 0 26px;
+  }
+  .masthead-inner { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .seal {
+    width: 52px; height: 52px; flex: none;
+    background: var(--seal);
+    color: #FFF7F0;
+    font-family: "Noto Serif TC", serif;
+    font-weight: 700; font-size: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(179, 57, 46, .35), inset 0 0 0 2px rgba(255, 247, 240, .35);
+    transform: rotate(-3deg);
+    user-select: none;
+  }
+  .masthead h1 {
+    font-family: "Noto Serif TC", serif;
+    font-size: 30px; font-weight: 700;
+    margin: 0; letter-spacing: 2px;
+  }
+  .masthead h1 .dot { color: var(--seal); }
+  .masthead .sub {
+    margin: 6px 0 0;
+    color: var(--slate); font-size: 14px;
+  }
+  .stats {
+    margin-left: auto;
+    display: flex; gap: 28px;
+  }
+  .stat { text-align: right; }
+  .stat .num {
+    font-family: "Noto Serif TC", serif;
+    font-size: 26px; font-weight: 700; color: var(--ink);
+    line-height: 1.1;
+  }
+  .stat .num em { font-style: normal; color: var(--seal); }
+  .stat .label { font-size: 12px; color: var(--slate); margin-top: 2px; }
+
+  /* ---------- 学段页签 ---------- */
+  .stagebar {
+    background: var(--card);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .stagebar-inner { display: flex; gap: 36px; }
+  .stage-tab {
+    appearance: none;
+    border: none; background: none; cursor: pointer;
+    padding: 14px 2px 12px;
+    font-family: "Noto Serif TC", serif;
+    font-size: 18px; font-weight: 600;
+    color: var(--slate);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    transition: color .15s, border-color .15s;
+  }
+  .stage-tab:hover { color: var(--ink); }
+  .stage-tab.active {
+    color: var(--ink);
+    border-bottom-color: var(--seal);
+  }
+  .stage-tab .cnt {
+    margin-left: 8px;
+    font-family: "Noto Sans TC", sans-serif;
+    font-size: 12px; font-weight: 500;
+    color: var(--slate);
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    padding: 1px 8px;
+    vertical-align: 3px;
+  }
+  .stage-tab.active .cnt { color: var(--seal); border-color: rgba(179, 57, 46, .35); background: rgba(179, 57, 46, .06); }
+
+  /* ---------- 筛选栏 ---------- */
+  .filterbar {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(244, 246, 249, .92);
+    backdrop-filter: blur(6px);
+    padding: 14px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .filterbar-inner { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .search-box { flex: 1 1 240px; min-width: 200px; }
+  .filter-select { width: 128px; }
+  .clear-btn { color: var(--slate); }
+
+  /* ---------- 表格 ---------- */
+  .table-card {
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    margin: 18px 0 28px;
+    padding: 4px 4px 14px;
+    animation: rise .35s ease both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .table-card { animation: none; }
+  }
+  .school-name { font-weight: 700; font-size: 15px; }
+  .district-cell { color: var(--ink); }
+  .muted { color: var(--slate); }
+
+  .band-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: .5px;
+    white-space: nowrap;
+  }
+  .band-1 { color: var(--band1); background: rgba(185, 138, 47, .12); border: 1px solid rgba(185, 138, 47, .4); }
+  .band-2 { color: var(--band2); background: rgba(74, 111, 165, .10); border: 1px solid rgba(74, 111, 165, .35); }
+  .band-3 { color: var(--band3); background: rgba(138, 148, 166, .10); border: 1px solid rgba(138, 148, 166, .35); }
+  .band-na { color: var(--slate); background: transparent; border: 1px dashed var(--hairline); font-weight: 400; }
+
+  /* ---------- 操作按钮 ---------- */
+  .ops { display: flex; gap: 8px; flex-wrap: wrap; }
+  .site-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid var(--ink);
+    border-radius: 4px;
+    color: var(--ink); text-decoration: none;
+    font-size: 13px; font-weight: 500;
+    background: #fff;
+    transition: background .15s;
+  }
+  .site-btn:hover { background: var(--el-color-primary-light-9); }
+  .site-btn.disabled {
+    border-color: var(--hairline); color: #B4BCC9;
+    pointer-events: none;
+  }
+  .admission-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px;
+    border: none; border-radius: 4px;
+    background: var(--seal); color: #FFF7F0;
+    font-size: 13px; font-weight: 500;
+    text-decoration: none; cursor: pointer;
+    font-family: inherit;
+    transition: background .15s;
+  }
+  .admission-btn:hover { background: var(--seal-dark); }
+  .admission-btn.disabled, .admission-btn.disabled:hover {
+    background: #E9ECF1; color: #9AA4B2; cursor: not-allowed;
+  }
+  .ops .el-dropdown .admission-btn { outline: none; }
+
+  /* ---------- 展开行 ---------- */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px 28px;
+    padding: 6px 12px;
+  }
+  .detail-item { font-size: 13px; line-height: 1.7; }
+  .detail-item .k { color: var(--slate); margin-right: 8px; }
+
+  /* ---------- 分页 ---------- */
+  .pager { display: flex; justify-content: flex-end; padding: 8px 12px 0; }
+
+  /* ---------- 错误提示 ---------- */
+  .err-box { margin: 18px 0; }
+
+  /* ---------- 移动端 ---------- */
+  @media (max-width: 767px) {
+    .masthead { padding: 22px 0 18px; }
+    .masthead h1 { font-size: 22px; }
+    .seal { width: 42px; height: 42px; font-size: 24px; }
+    .stats { margin-left: 0; width: 100%; justify-content: flex-start; gap: 24px; }
+    .stat { text-align: left; }
+    .stat .num { font-size: 20px; }
+    .stagebar-inner { gap: 0; }
+    .stage-tab { flex: 1; text-align: center; font-size: 16px; }
+    .filter-select { width: calc(50% - 5px); }
+    .search-box { flex: 1 1 100%; }
+    .table-card { border: none; background: transparent; padding: 0; margin-top: 12px; }
+  }
+  .mobile-card {
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .mobile-card .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .mobile-card .badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .mini-tag {
+    font-size: 12px; color: var(--slate);
+    border: 1px solid var(--hairline); border-radius: 3px;
+    padding: 1px 7px; background: #FAFBFD;
+  }
+  .mobile-card .addr { font-size: 12px; color: var(--slate); margin: 6px 0 10px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+  <!-- 刊头 -->
+  <header class="masthead">
+    <div class="container masthead-inner">
+      <div class="seal">插</div>
+      <div>
+        <h1>香港插班 <span class="dot">·</span> 学校名录</h1>
+        <p class="sub">全港中小学 · 筛选学校，一键直达官网与插班申请入口</p>
+      </div>
+      <div class="stats" v-if="!loading">
+        <div class="stat">
+          <div class="num">{{ schools.length }}</div>
+          <div class="label">收录学校</div>
+        </div>
+        <div class="stat">
+          <div class="num"><em>{{ linkCount }}</em></div>
+          <div class="label">插班入口</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 学段页签：顶层维度，独立于筛选栏 -->
+  <nav class="stagebar">
+    <div class="container stagebar-inner">
+      <button
+        v-for="t in [{key: 'secondary', label: '中学', count: secondaryCount}, {key: 'primary', label: '小学', count: primaryCount}]"
+        :key="t.key"
+        type="button"
+        class="stage-tab"
+        :class="{ active: stage === t.key }"
+        :aria-pressed="stage === t.key"
+        @click="stage = t.key">
+        {{ t.label }}<span class="cnt" v-if="!loading">{{ t.count }}</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- 筛选栏 -->
+  <div class="filterbar">
+    <div class="container filterbar-inner">
+      <el-input
+        class="search-box"
+        v-model="keyword"
+        :placeholder="stage === 'secondary' ? '搜索中学名称…' : '搜索小学名称…'"
+        clearable
+        :prefix-icon="SearchIcon">
+      </el-input>
+      <el-select
+        v-for="f in filterDefs"
+        :key="stage + f.key"
+        class="filter-select"
+        v-model="filters[f.key]"
+        :placeholder="f.label"
+        clearable
+        filterable>
+        <el-option v-for="opt in filterOptions[f.key]" :key="opt" :label="f.key === 'school_net' ? netOptionLabel(opt) : opt" :value="opt"></el-option>
+      </el-select>
+      <el-button v-if="hasActiveFilter" class="clear-btn" text @click="clearFilters">清空筛选</el-button>
+    </div>
+  </div>
+
+  <main class="container">
+    <!-- 错误 -->
+    <div class="err-box" v-if="error">
+      <el-alert type="error" :closable="false" show-icon
+        title="学校数据加载失败"
+        :description="error + '，请刷新页面重试。'">
+      </el-alert>
+    </div>
+
+    <div class="table-card" v-loading="loading" element-loading-text="正在加载学校名录…">
+      <!-- 桌面端：表格 -->
+      <el-table
+        v-if="!isMobile"
+        :data="pagedList"
+        row-key="id"
+        :empty-text="schools.length === 0 ? '暂无数据' : '没有符合条件的学校，试试放宽筛选'"
+        @sort-change="onSortChange"
+        style="width: 100%">
+        <el-table-column type="expand">
+          <template #default="scope">
+            <div class="detail-grid">
+              <div class="detail-item"><span class="k">地址</span>{{ scope.row.address || '—' }}</div>
+              <div class="detail-item"><span class="k">电邮</span>{{ scope.row.email || '—' }}</div>
+              <div class="detail-item"><span class="k">宗教</span>{{ scope.row.religion || '—' }}</div>
+              <div class="detail-item"><span class="k">学校类型</span>{{ scope.row.type || '—' }}</div>
+              <div class="detail-item" v-if="scope.row.stage === 'primary'"><span class="k">校网</span>{{ netLabel(scope.row.school_net) }}</div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="name" label="学校名称" min-width="210" sortable="custom">
+          <template #default="scope">
+            <span class="school-name">{{ scope.row.name }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="district" label="地区" width="110" sortable="custom">
+          <template #default="scope">
+            <span class="district-cell">{{ scope.row.district || '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="stage === 'secondary'" key="banding" prop="banding" label="组别" width="110" sortable="custom">
+          <template #default="scope">
+            <span v-if="scope.row.banding" class="band-badge" :class="bandClass(scope.row.banding)">{{ scope.row.banding }}</span>
+            <span v-else class="band-badge band-na">未标注</span>
+          </template>
+        </el-table-column>
+        <el-table-column v-else key="school_net" prop="school_net" label="校网" width="110" sortable="custom">
+          <template #default="scope">
+            <span class="district-cell">{{ netLabel(scope.row.school_net) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="type" label="类型" width="100">
+          <template #default="scope">
+            <span class="muted">{{ scope.row.type || '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="gender" label="性别" width="80">
+          <template #default="scope">
+            <span class="muted">{{ scope.row.gender || '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="stage === 'secondary'" key="language" prop="language" label="教学语言" width="110">
+          <template #default="scope">
+            <span class="muted">{{ scope.row.language || '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="phone" label="电话" width="130">
+          <template #default="scope">
+            <span class="muted">{{ scope.row.phone || '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="scope">
+            <div class="ops">
+              <a v-if="scope.row.url" class="site-btn" :href="scope.row.url" target="_blank" rel="noopener">官网 ↗</a>
+              <span v-else class="site-btn disabled">官网 ↗</span>
+
+              <a v-if="scope.row.admission_links.length === 1"
+                 class="admission-btn"
+                 :href="scope.row.admission_links[0].url"
+                 target="_blank" rel="noopener">插班申请</a>
+              <el-dropdown v-else-if="scope.row.admission_links.length > 1" trigger="click">
+                <button class="admission-btn" type="button">插班申请（{{ scope.row.admission_links.length }}）▾</button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item v-for="(link, i) in scope.row.admission_links" :key="i">
+                      <a :href="link.url" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">
+                        {{ link.link_text || '申请链接' }}<span v-if="link.grades && link.grades !== 'all'" class="muted">（{{ gradeLabel(link.grades) }}）</span>
+                      </a>
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+              <span v-else class="admission-btn disabled">暂无插班入口</span>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 移动端：堆叠卡片 -->
+      <div v-else>
+        <div v-if="!loading && pagedList.length === 0" style="text-align:center;color:var(--slate);padding:40px 0;">
+          {{ schools.length === 0 ? '暂无数据' : '没有符合条件的学校，试试放宽筛选' }}
+        </div>
+        <div v-for="s in pagedList" :key="s.id" class="mobile-card">
+          <div class="top">
+            <span class="school-name">{{ s.name }}</span>
+            <span v-if="s.stage === 'secondary' && s.banding" class="band-badge" :class="bandClass(s.banding)">{{ s.banding }}</span>
+            <span v-else-if="s.stage === 'primary'" class="mini-tag">{{ netLabel(s.school_net) }}</span>
+          </div>
+          <div class="badges">
+            <span v-if="s.district" class="mini-tag">{{ s.district }}</span>
+            <span v-if="s.type" class="mini-tag">{{ s.type }}</span>
+            <span v-if="s.gender" class="mini-tag">{{ s.gender }}</span>
+            <span v-if="s.language" class="mini-tag">{{ s.language }}</span>
+            <span v-if="s.phone" class="mini-tag">{{ s.phone }}</span>
+          </div>
+          <div class="addr" v-if="s.address">{{ s.address }}</div>
+          <div class="ops">
+            <a v-if="s.url" class="site-btn" :href="s.url" target="_blank" rel="noopener">官网 ↗</a>
+            <span v-else class="site-btn disabled">官网 ↗</span>
+
+            <a v-if="s.admission_links.length === 1"
+               class="admission-btn"
+               :href="s.admission_links[0].url"
+               target="_blank" rel="noopener">插班申请</a>
+            <el-dropdown v-else-if="s.admission_links.length > 1" trigger="click">
+              <button class="admission-btn" type="button">插班申请（{{ s.admission_links.length }}）▾</button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item v-for="(link, i) in s.admission_links" :key="i">
+                    <a :href="link.url" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">
+                      {{ link.link_text || '申请链接' }}<span v-if="link.grades && link.grades !== 'all'" class="muted">（年级 {{ link.grades }}）</span>
+                    </a>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            <span v-else class="admission-btn disabled">暂无插班入口</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分页 -->
+      <div class="pager" v-if="sortedList.length > 0">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="sortedList.length"
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50]">
+        </el-pagination>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/element-plus@2/dist/index.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/element-plus@2/dist/locale/zh-cn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2/dist/index.iife.min.js"></script>
+<script>
+(function () {
+  const { createApp, ref, reactive, computed, watch, onMounted, onBeforeUnmount } = Vue;
+
+  const app = createApp({
+    setup() {
+      const schools = ref([]);
+      const loading = ref(true);
+      const error = ref('');
+      const keyword = ref('');
+      const stage = ref('secondary');
+      const filters = reactive({
+        district: '', type: '', gender: '', language: '', banding: '', religion: '', school_net: ''
+      });
+      const sortState = reactive({ prop: '', order: '' });
+      const currentPage = ref(1);
+      const pageSize = ref(20);
+      const isMobile = ref(window.matchMedia('(max-width: 767px)').matches);
+      const SearchIcon = ElementPlusIconsVue.Search;
+
+      // 筛选维度按学段联动：小学无 banding 与教学语言数据，改用校网
+      const filterDefs = computed(() => {
+        const common = [
+          { key: 'district', label: '地区' },
+          { key: 'type', label: '学校类型' },
+          { key: 'gender', label: '性别' }
+        ];
+        if (stage.value === 'secondary') {
+          return [...common,
+            { key: 'language', label: '教学语言' },
+            { key: 'banding', label: '组别' },
+            { key: 'religion', label: '宗教' }
+          ];
+        }
+        return [...common,
+          { key: 'school_net', label: '校网' },
+          { key: 'religion', label: '宗教' }
+        ];
+      });
+
+      // 筛选项：从当前学段的数据 distinct 生成
+      // 校网按编号数值排序；'0' 表示直资/私立（不参与派位校网），不出现在选项中
+      const filterOptions = computed(() => {
+        const opts = {};
+        const pool = schools.value.filter(s => s.stage === stage.value);
+        for (const f of filterDefs.value) {
+          const set = new Set();
+          for (const s of pool) {
+            const v = s[f.key];
+            if (!v) continue;
+            if (f.key === 'school_net' && v === '0') continue;
+            set.add(v);
+          }
+          const arr = Array.from(set);
+          arr.sort(f.key === 'school_net'
+            ? (a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0)
+            : (a, b) => a.localeCompare(b, 'zh'));
+          opts[f.key] = arr;
+        }
+        return opts;
+      });
+
+      const filteredList = computed(() => {
+        const kw = keyword.value.trim().toLowerCase();
+        return schools.value.filter(s => {
+          if (s.stage !== stage.value) return false;
+          if (kw && !(s.name || '').toLowerCase().includes(kw)) return false;
+          for (const f of filterDefs.value) {
+            const v = filters[f.key];
+            if (v && s[f.key] !== v) return false;
+          }
+          return true;
+        });
+      });
+
+      // 排序作用于筛选后的全集，而非当前页；校网按数值排序
+      const sortedList = computed(() => {
+        const list = filteredList.value.slice();
+        const { prop, order } = sortState;
+        if (!prop || !order) return list;
+        const dir = order === 'ascending' ? 1 : -1;
+        list.sort((a, b) => {
+          const va = a[prop] || '';
+          const vb = b[prop] || '';
+          if (prop === 'school_net') {
+            return ((parseInt(va, 10) || 0) - (parseInt(vb, 10) || 0)) * dir;
+          }
+          return va.localeCompare(vb, 'zh') * dir;
+        });
+        return list;
+      });
+
+      const pagedList = computed(() => {
+        const start = (currentPage.value - 1) * pageSize.value;
+        return sortedList.value.slice(start, start + pageSize.value);
+      });
+
+      const linkCount = computed(() =>
+        schools.value.reduce((n, s) => n + s.admission_links.length, 0)
+      );
+      const secondaryCount = computed(() => schools.value.filter(s => s.stage === 'secondary').length);
+      const primaryCount = computed(() => schools.value.filter(s => s.stage === 'primary').length);
+
+      const hasActiveFilter = computed(() =>
+        keyword.value.trim() !== '' || filterDefs.value.some(f => filters[f.key])
+      );
+
+      function clearFilters() {
+        keyword.value = '';
+        for (const f of filterDefs.value) filters[f.key] = '';
+      }
+
+      function onSortChange({ prop, order }) {
+        sortState.prop = order ? prop : '';
+        sortState.order = order || '';
+      }
+
+      // banding 徽章配色：取名称中第一个数字
+      function bandClass(banding) {
+        const m = /([123])/.exec(banding || '');
+        return m ? 'band-' + m[1] : 'band-na';
+      }
+
+      // 校网 '0' = 直资/私立，不参与小一派位校网，显示为 —
+      function netLabel(net) {
+        return net && net !== '0' ? net : '—';
+      }
+      function netOptionLabel(net) {
+        return net + ' 校网';
+      }
+
+      // grades 原始值为 P1-P6 / S1-S6 逗号分隔（P=小学, S=中学），转译为「小一、中一」等
+      const GRADE_ZH = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六' };
+      function gradeLabel(grades) {
+        return grades.split(',').map(g => {
+          const m = /^([PS])([1-6])$/.exec(g.trim());
+          if (!m) return g;
+          return (m[1] === 'P' ? '小' : '中') + GRADE_ZH[m[2]];
+        }).join('、');
+      }
+
+      // 切换学段：清空学段互斥的筛选与排序（组别/校网列互斥）
+      watch(stage, () => {
+        filters.banding = '';
+        filters.school_net = '';
+        filters.language = '';
+        sortState.prop = '';
+        sortState.order = '';
+      });
+
+      // 筛选 / 学段 / 每页条数变化时回到第一页
+      watch([keyword, stage, () => ({ ...filters }), pageSize], () => {
+        currentPage.value = 1;
+      });
+
+      const mq = window.matchMedia('(max-width: 767px)');
+      const onMq = e => { isMobile.value = e.matches; };
+
+      onMounted(async () => {
+        mq.addEventListener('change', onMq);
+        try {
+          const resp = await fetch('/api/v1/schools');
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          const body = await resp.json();
+          if (body.errCode !== 200 && body.errCode !== 0) {
+            throw new Error(body.errMsg || '接口返回错误');
+          }
+          schools.value = (body.data || []).map(s => ({
+            ...s,
+            admission_links: s.admission_links || []
+          }));
+        } catch (e) {
+          error.value = e.message || String(e);
+        } finally {
+          loading.value = false;
+        }
+      });
+      onBeforeUnmount(() => mq.removeEventListener('change', onMq));
+
+      return {
+        schools, loading, error, keyword, stage, filters, filterDefs, filterOptions,
+        sortedList, pagedList, linkCount, secondaryCount, primaryCount,
+        hasActiveFilter, clearFilters,
+        currentPage, pageSize, onSortChange, bandClass, netLabel, netOptionLabel,
+        gradeLabel, isMobile, SearchIcon
+      };
+    }
+  });
+
+  app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+  app.mount('#app');
+})();
+</script>
+</body>
+</html>

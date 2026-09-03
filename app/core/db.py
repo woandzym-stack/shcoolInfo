@@ -19,7 +19,9 @@ async_engine = create_async_engine(
     settings.ASYNC_DATABASE_URL,
     echo=False,
     future=True,
-    pool_pre_ping=True,
+    # 注意：不能开 pool_pre_ping——SQLAlchemy 2.0 的 asyncmy 方言 do_ping() 调用
+    # AsyncAdapt_asyncmy_connection.ping() 时缺少必填的 reconnect 参数，每次 checkout 必抛 TypeError。
+    # pool_recycle=3600 已能覆盖 MySQL wait_timeout 导致的闲置断连场景。
     pool_size=20,        # 连接池大小
     max_overflow=10,     # 超出连接池大小时，允许额外创建的连接数
     pool_recycle=3600
