@@ -58,6 +58,10 @@ class Settings(BaseSettings):
 
     PRODUCT_IP: Optional[str] = None
 
+    GMAIL_APP_PASSWORD:str =None
+
+    GMAIL_SENDER:str="zhouopenclaw@gmail.com"
+
     # --- 4. 组装 DATABASE_URL ---
     @property
     def DATABASE_URL(self) -> str:

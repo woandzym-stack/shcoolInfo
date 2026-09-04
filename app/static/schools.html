@@ -83,6 +83,7 @@
     line-height: 1.1;
   }
   .stat .num em { font-style: normal; color: var(--seal); }
+  .stat .num.date { font-size: 19px; line-height: 1.55; }
   .stat .label { font-size: 12px; color: var(--slate); margin-top: 2px; }
 
   /* ---------- 学段页签 ---------- */
@@ -264,6 +265,10 @@
         <div class="stat">
           <div class="num"><em>{{ linkCount }}</em></div>
           <div class="label">插班入口</div>
+        </div>
+        <div class="stat" v-if="updatedAt" :title="'最近更新：' + updatedAtFull">
+          <div class="num date">{{ updatedAt }}</div>
+          <div class="label">数据更新</div>
         </div>
       </div>
     </div>
@@ -489,6 +494,9 @@
       const pageSize = ref(20);
       const isMobile = ref(window.matchMedia('(max-width: 767px)').matches);
       const SearchIcon = ElementPlusIconsVue.Search;
+      // 数据更新时间：date 为刊头展示（yyyy-MM-dd），full 为 tooltip（含时分）
+      const updatedAt = ref('');
+      const updatedAtFull = ref('');
 
       // 筛选维度按学段联动：小学无 banding 与教学语言数据，改用校网
       const filterDefs = computed(() => {
@@ -661,8 +669,31 @@
       const mq = window.matchMedia('(max-width: 767px)');
       const onMq = e => { isMobile.value = e.matches; };
 
+      // 「2026-09-01T08:30:00」→ { date: '2026-09-01', full: '2026-09-01 08:30' }
+      function fmtUpdatedAt(iso) {
+        const m = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2})(?::\d{2})?)?/.exec(iso || '');
+        if (!m) return null;
+        return { date: m[1], full: m[2] ? m[1] + ' ' + m[2] : m[1] };
+      }
+
+      // 数据更新时间独立加载：失败只隐藏展示位，不影响名录主流程
+      async function loadUpdatedAt() {
+        try {
+          const resp = await fetch('/api/v1/schools/last-updated');
+          if (!resp.ok) return;
+          const body = await resp.json();
+          if ((body.errCode !== 200 && body.errCode !== 0) || !body.data) return;
+          const fmt = fmtUpdatedAt(body.data.updated_at);
+          if (fmt) {
+            updatedAt.value = fmt.date;
+            updatedAtFull.value = fmt.full;
+          }
+        } catch (e) { /* 静默失败 */ }
+      }
+
       onMounted(async () => {
         mq.addEventListener('change', onMq);
+        loadUpdatedAt();
         try {
           const resp = await fetch('/api/v1/schools');
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -690,7 +721,7 @@
         sortedList, pagedList, linkCount, secondaryCount, primaryCount,
         hasActiveFilter, clearFilters,
         currentPage, pageSize, onSortChange, bandClass, netLabel, netOptionLabel,
-        gradeLabel, isMobile, SearchIcon
+        gradeLabel, isMobile, SearchIcon, updatedAt, updatedAtFull
       };
     }
   });

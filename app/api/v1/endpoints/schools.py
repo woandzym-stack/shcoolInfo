@@ -2,18 +2,20 @@ import asyncio
 import json
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from loguru import logger
 from opencc import OpenCC
 from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.core.db import AsyncSessionLocal
+from app.core.db import AsyncSessionLocal, get_async_db
 from app.models.admission_links import AdmissionLinks
 from app.models.schools import Schools
 from app.schemas.response import SingleResponse
+from app.services.db import weekly_run_log_service
 
 router = APIRouter()
 
@@ -167,6 +169,22 @@ async def list_schools(refresh: bool = False) -> Response:
 
     await _get_directory(refresh=refresh)
     return Response(content=_cache_body, media_type="application/json")
+
+
+@router.get("/last-updated", response_model=SingleResponse, summary="获取名录最近数据更新时间")
+async def last_updated(db: Annotated[AsyncSession, Depends(get_async_db)]) -> SingleResponse:
+    """
+    返回 weekly_run_log 中最近一次成功运行的完成时间，供页面展示「数据更新于」。
+
+    - 优先取 finished_at；为空时退回 started_at / run_date
+    - 表极小（每周一条），不走名录缓存，直接查询
+    - 暂无成功记录时 data 为 null，前端应隐藏该展示位
+    """
+    log = await weekly_run_log_service.latest_success(db)
+    if log is None:
+        return SingleResponse(data=None)
+    ts = log.finished_at or log.started_at or log.run_date
+    return SingleResponse(data={"updated_at": ts})
 
 
 @router.get("/search", response_model=SingleResponse, summary="按名称搜索学校（自动简转繁）")

@@ -1,6 +1,8 @@
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+
 from app.models.weekly_run_log import WeeklyRunLog
 
 
@@ -99,6 +101,24 @@ class WeeklyRunLogService:
         db.add(weekly_run_log)
         await db.flush()
         return weekly_run_log
+
+    # ---------- 手写扩展（非生成器模板方法，重新生成时注意保留） ----------
+    async def latest_success(self, db: AsyncSession) -> Optional[WeeklyRunLog]:
+        """
+        查询最近一次运行成功（status=success）的日志
+        :param db: 异步数据库会话
+        :return: WeeklyRunLog 对象或 None
+        """
+        statement = (
+            select(WeeklyRunLog)
+            .where(WeeklyRunLog.status == "success")
+            # 未启用 sqlmodel mypy 插件时类属性被推断为标量 int，.desc() 报 attr-defined；
+            # 与 schools.py 中 order_by(Schools.id) 的既有情况同类，此处显式忽略
+            .order_by(WeeklyRunLog.id.desc())  # type: ignore[attr-defined]
+            .limit(1)
+        )
+        result = await db.exec(statement)
+        return result.first()
 
     async def delete(self, db: AsyncSession, id: int) -> bool:
         """
