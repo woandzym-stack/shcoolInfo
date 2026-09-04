@@ -83,7 +83,6 @@
     line-height: 1.1;
   }
   .stat .num em { font-style: normal; color: var(--seal); }
-  .stat .num.date { font-size: 19px; line-height: 1.55; }
   .stat .label { font-size: 12px; color: var(--slate); margin-top: 2px; }
 
   /* ---------- 学段页签 ---------- */
@@ -216,6 +215,16 @@
   /* ---------- 错误提示 ---------- */
   .err-box { margin: 18px 0; }
 
+  /* ---------- 页脚 ---------- */
+  .site-footer {
+    border-top: 1px solid var(--hairline);
+    padding: 18px 0 28px;
+    color: var(--slate);
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.8;
+  }
+
   /* ---------- 移动端 ---------- */
   @media (max-width: 767px) {
     .masthead { padding: 22px 0 18px; }
@@ -265,10 +274,6 @@
         <div class="stat">
           <div class="num"><em>{{ linkCount }}</em></div>
           <div class="label">插班入口</div>
-        </div>
-        <div class="stat" v-if="updatedAt" :title="'最近更新：' + updatedAtFull">
-          <div class="num date">{{ updatedAt }}</div>
-          <div class="label">数据更新</div>
         </div>
       </div>
     </div>
@@ -469,6 +474,12 @@
       </div>
     </div>
   </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      © {{ year }} 香港插班 · 学校名录<span v-if="updatedAt" :title="'最近更新：' + updatedAtFull"> · 数据更新于 {{ updatedAt }}</span>
+    </div>
+  </footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
@@ -497,6 +508,7 @@
       // 数据更新时间：date 为刊头展示（yyyy-MM-dd），full 为 tooltip（含时分）
       const updatedAt = ref('');
       const updatedAtFull = ref('');
+      const year = new Date().getFullYear();
 
       // 筛选维度按学段联动：小学无 banding 与教学语言数据，改用校网
       const filterDefs = computed(() => {
@@ -721,7 +733,7 @@
         sortedList, pagedList, linkCount, secondaryCount, primaryCount,
         hasActiveFilter, clearFilters,
         currentPage, pageSize, onSortChange, bandClass, netLabel, netOptionLabel,
-        gradeLabel, isMobile, SearchIcon, updatedAt, updatedAtFull
+        gradeLabel, isMobile, SearchIcon, updatedAt, updatedAtFull, year
       };
     }
   });
