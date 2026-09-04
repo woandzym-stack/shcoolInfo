@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "🛠️ Start",  
+            "type": "shell",
+            "command": ".\\run.bat",      // 新任务要执行的命令或脚本
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true,
+                "clear": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}
