@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>香港插班 · 学校名录</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2/dist/index.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="/static/fonts/fonts.css" rel="stylesheet">
 <style>
   :root {
     --ink: #1E2A44;
@@ -91,6 +90,57 @@
     border-bottom: 1px solid var(--hairline);
   }
   .stagebar-inner { display: flex; gap: 36px; }
+  .stagebar-contact-wrap { margin-left: auto; align-self: center; position: relative; }
+  .stagebar-contact {
+    display: inline-flex; align-items: center;
+    padding: 6px 12px;
+    border: 1px solid var(--ink);
+    border-radius: 4px;
+    color: var(--ink);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    font-size: 13px; font-weight: 700;
+    background: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s;
+  }
+  .stagebar-contact:hover { background: var(--el-color-primary-light-9); }
+  .contact-pop {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 30;
+    background: #fff;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    box-shadow: 0 6px 24px rgba(30, 42, 68, .14);
+    padding: 12px 14px;
+    min-width: 220px;
+    text-align: left;
+  }
+  .contact-email {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    word-break: break-all;
+    user-select: all;
+  }
+  .contact-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .contact-act {
+    flex: 1;
+    display: inline-flex; justify-content: center;
+    padding: 5px 10px;
+    border: 1px solid var(--ink);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 12px; font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .contact-act:hover, .contact-act.mailto:hover { background: var(--el-color-primary-light-9); }
+  .fade-enter-active, .fade-leave-active { transition: opacity .15s; }
+  .fade-enter-from, .fade-leave-to { opacity: 0; }
   .stage-tab {
     appearance: none;
     border: none; background: none; cursor: pointer;
@@ -236,6 +286,7 @@
     .stat .num { font-size: 20px; }
     .stagebar-inner { gap: 0; }
     .stage-tab { flex: 1; text-align: center; font-size: 16px; }
+    .stagebar-contact { font-size: 13px; }
     .filter-select { width: calc(50% - 5px); }
     .search-box { flex: 1 1 100%; }
     .table-card { border: none; background: transparent; padding: 0; margin-top: 12px; }
@@ -293,6 +344,18 @@
         @click="stage = t.key">
         {{ t.label }}<span class="cnt" v-if="!loading">{{ t.count }}</span>
       </button>
+      <div class="stagebar-contact-wrap">
+        <button type="button" class="stagebar-contact" :aria-expanded="showContact" @click="showContact = !showContact">联系我们</button>
+        <transition name="fade">
+          <div class="contact-pop" v-if="showContact">
+            <div class="contact-email" id="contact-email">ddup0530@gmail.com</div>
+            <div class="contact-actions">
+              <button type="button" class="contact-act" @click="copyEmail">{{ copied ? '已复制 ✓' : '复制邮箱' }}</button>
+              <a class="contact-act mailto" href="mailto:ddup0530@gmail.com" @click.stop>发邮件</a>
+            </div>
+          </div>
+        </transition>
+      </div>
     </div>
   </nav>
 
@@ -526,6 +589,41 @@
       const updatedAt = ref('');
       const updatedAtFull = ref('');
       const year = new Date().getFullYear();
+
+      // 联系我们弹层：点按钮展开，点页面其他位置收起
+      const showContact = ref(false);
+      const copied = ref(false);
+      function onDocClick(e) {
+        if (!showContact.value) return;
+        if (!e.target.closest('.stagebar-contact-wrap')) {
+          showContact.value = false;
+          copied.value = false;
+        }
+      }
+      document.addEventListener('click', onDocClick);
+      async function copyEmail() {
+        if (copied.value) return;
+        const email = document.getElementById('contact-email')?.textContent?.trim() || '';
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(email);
+          } else {
+            // 非 https 环境（如局域网 IP 访问）clipboard API 不可用，退回旧方案
+            const ta = document.createElement('textarea');
+            ta.value = email;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
+          copied.value = true;
+          setTimeout(() => { copied.value = false; }, 2000);
+        } catch (err) {
+          // 复制失败时保持弹层展开，用户可长按/划选邮箱文本手动复制
+        }
+      }
 
       // 筛选维度按学段联动：小学无 banding 与教学语言数据，改用校网
       const filterDefs = computed(() => {
@@ -809,6 +907,7 @@
         hasActiveFilter, clearFilters,
         currentPage, pageSize, onSortChange, bandClass, netLabel, netOptionLabel,
         gradeLabel, isMobile, SearchIcon, updatedAt, updatedAtFull, year,
+        showContact, copied, copyEmail,
         linksCache, linksLoading, ensureLinks, openSingleAdmission
       };
     }
