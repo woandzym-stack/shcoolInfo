@@ -2,7 +2,7 @@ version: '3.8' # 建议显式声明版本号
 
 services:
   web: 
-    image: ${DOCKER_REGISTRY:-registry.cn-shenzhen.aliyuncs.com/your-namespace}/${PROJECT_NAME:-myapp}:${IMAGE_TAG:-latest}
+    image: ${PROJECT_NAME:-shcoolinfo}:${IMAGE_TAG:-latest}
     platform: linux/amd64
     
     # 容器名变量化，防止同主机多项目冲突。

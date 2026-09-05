@@ -194,6 +194,7 @@
     transition: background .15s;
   }
   .admission-btn:hover { background: var(--seal-dark); }
+  .admission-btn:disabled { background: #D9736B; cursor: wait; }
   .admission-btn.disabled, .admission-btn.disabled:hover {
     background: #E9ECF1; color: #9AA4B2; cursor: not-allowed;
   }
@@ -395,15 +396,23 @@
               <a v-if="scope.row.url" class="site-btn" :href="scope.row.url" target="_blank" rel="noopener">官网 ↗</a>
               <span v-else class="site-btn disabled">官网 ↗</span>
 
-              <a v-if="scope.row.admission_links.length === 1"
-                 class="admission-btn"
-                 :href="scope.row.admission_links[0].url"
-                 target="_blank" rel="noopener">插班申请</a>
-              <el-dropdown v-else-if="scope.row.admission_links.length > 1" trigger="click">
-                <button class="admission-btn" type="button">插班申请（{{ scope.row.admission_links.length }}）▾</button>
+              <button v-if="scope.row.admission_link_count === 1"
+                      class="admission-btn"
+                      type="button"
+                      :disabled="!!linksLoading[scope.row.id]"
+                      @click="openSingleAdmission(scope.row)">
+                {{ linksLoading[scope.row.id] ? '加载中…' : '插班申请' }}
+              </button>
+              <el-dropdown v-else-if="scope.row.admission_link_count > 1" trigger="click"
+                           @visible-change="v => v && ensureLinks(scope.row)">
+                <button class="admission-btn" type="button">插班申请（{{ scope.row.admission_link_count }}）▾</button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item v-for="(link, i) in scope.row.admission_links" :key="i">
+                    <el-dropdown-item v-if="!linksCache[scope.row.id]" :disabled="!!linksLoading[scope.row.id]"
+                                      @click="ensureLinks(scope.row)">
+                      {{ linksLoading[scope.row.id] ? '加载中…' : '加载失败，点击重试' }}
+                    </el-dropdown-item>
+                    <el-dropdown-item v-for="(link, i) in linksCache[scope.row.id] || []" :key="i">
                       <a :href="link.url" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">
                         {{ link.link_text || '申请链接' }}<span v-if="link.grades && link.grades !== 'all'" class="muted">（{{ gradeLabel(link.grades) }}）</span>
                       </a>
@@ -440,15 +449,23 @@
             <a v-if="s.url" class="site-btn" :href="s.url" target="_blank" rel="noopener">官网 ↗</a>
             <span v-else class="site-btn disabled">官网 ↗</span>
 
-            <a v-if="s.admission_links.length === 1"
-               class="admission-btn"
-               :href="s.admission_links[0].url"
-               target="_blank" rel="noopener">插班申请</a>
-            <el-dropdown v-else-if="s.admission_links.length > 1" trigger="click">
-              <button class="admission-btn" type="button">插班申请（{{ s.admission_links.length }}）▾</button>
+            <button v-if="s.admission_link_count === 1"
+                    class="admission-btn"
+                    type="button"
+                    :disabled="!!linksLoading[s.id]"
+                    @click="openSingleAdmission(s)">
+              {{ linksLoading[s.id] ? '加载中…' : '插班申请' }}
+            </button>
+            <el-dropdown v-else-if="s.admission_link_count > 1" trigger="click"
+                         @visible-change="v => v && ensureLinks(s)">
+              <button class="admission-btn" type="button">插班申请（{{ s.admission_link_count }}）▾</button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item v-for="(link, i) in s.admission_links" :key="i">
+                  <el-dropdown-item v-if="!linksCache[s.id]" :disabled="!!linksLoading[s.id]"
+                                    @click="ensureLinks(s)">
+                    {{ linksLoading[s.id] ? '加载中…' : '加载失败，点击重试' }}
+                  </el-dropdown-item>
+                  <el-dropdown-item v-for="(link, i) in linksCache[s.id] || []" :key="i">
                     <a :href="link.url" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">
                       {{ link.link_text || '申请链接' }}<span v-if="link.grades && link.grades !== 'all'" class="muted">（年级 {{ link.grades }}）</span>
                     </a>
@@ -595,7 +612,7 @@
       });
 
       const linkCount = computed(() =>
-        schools.value.reduce((n, s) => n + s.admission_links.length, 0)
+        schools.value.reduce((n, s) => n + (s.admission_link_count || 0), 0)
       );
       const secondaryCount = computed(() => schools.value.filter(s => s.stage === 'secondary').length);
       const primaryCount = computed(() => schools.value.filter(s => s.stage === 'primary').length);
@@ -638,6 +655,64 @@
         }).join('、');
       }
 
+      // ---------- 插班链接：点击时按需加载 ----------
+      // 后端不再随名录批量下发链接（防爬），点击「插班申请」才调单校接口；
+      // 结果缓存在 linksCache，重复点击/展开不再请求。
+      const linksCache = reactive({});    // schoolId → [{url, link_text, grades}]
+      const linksLoading = reactive({});  // schoolId → bool
+
+      async function fetchAdmissionLinks(schoolId) {
+        const resp = await fetch('/api/v1/schools/' + schoolId + '/admission-links');
+        const body = await resp.json().catch(() => null);
+        if (!resp.ok || !body || (body.errCode !== 200 && body.errCode !== 0)) {
+          throw new Error((body && body.errMsg) || 'HTTP ' + resp.status);
+        }
+        const links = body.data || [];
+        linksCache[schoolId] = links;
+        return links;
+      }
+
+      // 多链接场景：下拉展开时预取；失败时下拉内提供重试项
+      async function ensureLinks(school) {
+        if (linksCache[school.id] || linksLoading[school.id]) return;
+        linksLoading[school.id] = true;
+        try {
+          await fetchAdmissionLinks(school.id);
+        } catch (e) {
+          ElementPlus.ElMessage.error(e.message || '申请链接加载失败');
+        } finally {
+          linksLoading[school.id] = false;
+        }
+      }
+
+      // 单链接场景：点击直接开新标签。window.open 必须在点击同步栈里调用，
+      // 否则被浏览器弹窗拦截；先开空白页占位，拿到链接后再跳转，失败则关掉。
+      async function openSingleAdmission(school) {
+        if (linksLoading[school.id]) return;
+        const cached = linksCache[school.id];
+        if (cached && cached.length === 1) {
+          window.open(cached[0].url, '_blank', 'noopener');
+          return;
+        }
+        const win = window.open('', '_blank');
+        linksLoading[school.id] = true;
+        try {
+          const links = await fetchAdmissionLinks(school.id);
+          if (links.length === 1) {
+            if (win) win.location.href = links[0].url;
+            else window.open(links[0].url, '_blank', 'noopener');
+          } else {
+            if (win) win.close();
+            ElementPlus.ElMessage.warning(links.length === 0 ? '该校暂无插班入口' : '链接数据已更新，请重试');
+          }
+        } catch (e) {
+          if (win) win.close();
+          ElementPlus.ElMessage.error(e.message || '申请链接加载失败');
+        } finally {
+          linksLoading[school.id] = false;
+        }
+      }
+
       // 切换学段：清空学段互斥的筛选与排序（组别/校网列互斥）
       watch(stage, () => {
         filters.banding = '';
@@ -669,7 +744,7 @@
             }
             searchResults.value = (body.data || []).map(s => ({
               ...s,
-              admission_links: s.admission_links || []
+              admission_link_count: s.admission_link_count || 0
             }));
           } catch (e) {
             // 搜索失败则退回全量列表（前端按原样匹配，行为与改造前一致）
@@ -715,7 +790,7 @@
           }
           schools.value = (body.data || []).map(s => ({
             ...s,
-            admission_links: s.admission_links || []
+            admission_link_count: s.admission_link_count || 0
           }));
         } catch (e) {
           error.value = e.message || String(e);
@@ -733,7 +808,8 @@
         sortedList, pagedList, linkCount, secondaryCount, primaryCount,
         hasActiveFilter, clearFilters,
         currentPage, pageSize, onSortChange, bandClass, netLabel, netOptionLabel,
-        gradeLabel, isMobile, SearchIcon, updatedAt, updatedAtFull, year
+        gradeLabel, isMobile, SearchIcon, updatedAt, updatedAtFull, year,
+        linksCache, linksLoading, ensureLinks, openSingleAdmission
       };
     }
   });
